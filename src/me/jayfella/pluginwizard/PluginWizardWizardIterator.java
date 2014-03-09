@@ -61,10 +61,13 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
 
     private void createModuleSuite(FileObject suiteDir) throws IOException
     {
-        File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleSuiteTemplate.zip"));
-        FileObject suiteTemplate = FileUtil.toFileObject(file);
+        // File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleSuiteTemplate.zip"));
+        // FileObject suiteTemplate = FileUtil.toFileObject(file);
 
-        ZipInputStream str = new ZipInputStream(suiteTemplate.getInputStream());
+
+        // ZipInputStream str = new ZipInputStream(suiteTemplate.getInputStream());
+        ZipInputStream str = new ZipInputStream(getClass().getClassLoader().getResourceAsStream("me/jayfella/pluginwizard/ModuleSuiteTemplate.zip"));
+
         ZipEntry entry;
 
         try
@@ -90,10 +93,12 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
 
     private void createModule(FileObject suiteDirFo, FileObject moduleDirFo) throws IOException
     {
-        File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleTemplate.zip"));
-        FileObject moduleTemplate = FileUtil.toFileObject(file);
+        // File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleTemplate.zip"));
+        // FileObject moduleTemplate = FileUtil.toFileObject(file);
 
-        ZipInputStream str = new ZipInputStream(moduleTemplate.getInputStream());
+        // ZipInputStream str = new ZipInputStream(moduleTemplate.getInputStream());
+        ZipInputStream str = new ZipInputStream(getClass().getClassLoader().getResourceAsStream("me/jayfella/pluginwizard/ModuleTemplate.zip"));
+
         ZipEntry entry;
 
         // extract the zip file

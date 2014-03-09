@@ -1,17 +1,24 @@
 package me.jayfella.pluginwizard;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.zip.ZipInputStream;
 import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.EditableProperties;
+import org.openide.util.Exceptions;
+import org.openide.xml.XMLUtil;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 /**
  *
@@ -19,22 +26,127 @@ import org.openide.util.EditableProperties;
  */
 public class WizardUtils
 {
-    public static void setModuleName(FileObject fo, ZipInputStream str, String name) throws IOException
+    public static void setModuleBasePackageInProjectXmlFile(FileObject xmlFile, String basePackage)
     {
-        /* ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        FileUtil.copy(str, baos);
+        try
+        {
+            Document doc = XMLUtil.parse(new InputSource(new ByteArrayInputStream(xmlFile.asBytes())), false, false, null, null);
+            NodeList nl = doc.getDocumentElement().getElementsByTagName("code-name-base");
 
-        String data = baos.toString("UTF-8");
-        data = data.replace("OpenIDE-Module-Name=JmonkeyPluginModuleTemplate", "OpenIDE-Module-Name=" + name);
+            if (nl != null)
+            {
+                for (int i = 0; i < nl.getLength(); i++)
+                {
+                    Element el = (Element) nl.item(i);
 
-        OutputStream out = fo.getOutputStream();
+                    if (el.getParentNode() != null && "data".equals(el.getParentNode().getNodeName()))
+                    {
+                        NodeList nl2 = el.getChildNodes();
 
-        PrintStream printStream = new PrintStream(out);
-        printStream.print(data);
-        printStream.close(); */
-        
+                        if (nl2.getLength() > 0)
+                        {
+                            nl2.item(0).setNodeValue(basePackage);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            OutputStream out = xmlFile.getOutputStream();
+
+            try
+            {
+                XMLUtil.write(doc, out, "UTF-8");
+            }
+            finally
+            {
+                out.close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Exceptions.printStackTrace(ex);
+        }
+    }
+
+    public static void setLicenseInProjectProperties(String projPropPath, String licenseLoc) throws IOException
+    {
+        File projPropFile = new File(projPropPath);
+        FileObject fo = FileUtil.toFileObject(projPropFile);
+
+        String licensePath = "src/" + licenseLoc.replace("\\", "/");
+
         EditableProperties ep = loadProperties(fo);
-        ep.setProperty("OpenIDE-Module-Name", name);
+        ep.setProperty("license.file", licensePath);
+        storeProperties(fo, ep);
+    }
+
+    public static void copyJmeLicenseToModule(File basePackageDir) throws IOException
+    {
+        InputStream licenseFileIs = WizardUtils.class.getClassLoader().getResourceAsStream("me/jayfella/pluginwizard/modulefiles/jme-license.txt");
+
+        BufferedReader br = null;
+        StringBuilder sb = new StringBuilder();
+
+        String line;
+
+        try
+        {
+            br = new BufferedReader(new InputStreamReader(licenseFileIs));
+
+            while ((line = br.readLine()) != null)
+            {
+                sb.append(line).append(System.getProperty("line.separator"));
+            }
+
+        }
+        catch (IOException ex)
+        {
+            Exceptions.printStackTrace(ex);
+        }
+        finally
+        {
+            if (br != null)
+            {
+                try
+                {
+                    br.close();
+                }
+                catch (IOException ex)
+                {
+                    Exceptions.printStackTrace(ex);
+                }
+            }
+        }
+
+        File newLicenseFile = new File(basePackageDir.getAbsolutePath() + File.separatorChar + "jme-license.txt");
+        newLicenseFile.createNewFile();
+
+        FileWriter fw = new FileWriter(newLicenseFile.getAbsoluteFile());
+        BufferedWriter bw = new BufferedWriter(fw);
+        bw.write(sb.toString());
+
+        bw.close();
+    }
+
+    public static void createBundlePropertiesFile(FileObject fo, String pluginName) throws IOException
+    {
+        EditableProperties ep = loadProperties(fo);
+        ep.setProperty("OpenIDE-Module-Name", pluginName);
+        storeProperties(fo, ep);
+    }
+
+    public static void createModuleManifestFile(FileObject fo, String basePackage) throws IOException
+    {
+        EditableProperties ep = loadProperties(fo);
+        String basePackagePath = basePackage.replace(".", "/");
+
+        ep.setProperty("Manifest-Version", "1.0");
+        ep.setProperty("OpenIDE-Module", basePackage);
+        ep.setProperty("OpenIDE-Module-Implementation-Version", "0");
+        // ep.setProperty("OpenIDE-Module-Layer", basePackagePath + "/layer.xml");
+        ep.setProperty("OpenIDE-Module-Localizing-Bundle", basePackagePath + "/Bundle.properties");
         storeProperties(fo, ep);
     }
 

@@ -78,15 +78,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
                 else
                 {
                     FileObject fo = FileUtil.createData(suiteDir, entry.getName());
-
-                    if (entry.getName().equals("src/myplugin/Bundle.properties"))
-                    {
-                        // setModuleName(fo, str, suiteDir.getName());
-                    }
-                    else
-                    {
-                        writeFile(str, fo);
-                    }
+                    writeFile(str, fo);
                 }
             }
         }
@@ -96,7 +88,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         }
     }
 
-    private void createModule(FileObject moduleDir) throws IOException
+    private void createModule(FileObject suiteDirFo, FileObject moduleDirFo) throws IOException
     {
         File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleTemplate.zip"));
         FileObject moduleTemplate = FileUtil.toFileObject(file);
@@ -104,33 +96,55 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         ZipInputStream str = new ZipInputStream(moduleTemplate.getInputStream());
         ZipEntry entry;
 
+        // extract the zip file
         try
         {
             while ((entry = str.getNextEntry()) != null)
             {
                 if (entry.isDirectory())
                 {
-                    FileUtil.createFolder(moduleDir, entry.getName());
+                    FileUtil.createFolder(moduleDirFo, entry.getName());
                 }
                 else
                 {
-                    FileObject fo = FileUtil.createData(moduleDir, entry.getName());
-
-                    if (entry.getName().equals("src/myplugin/Bundle.properties"))
-                    {
-                        WizardUtils.setModuleName(fo, str, moduleDir.getName());
-                    }
-                    else
-                    {
-                        writeFile(str, fo);
-                    }
-                }
+                    FileObject fo = FileUtil.createData(moduleDirFo, entry.getName());
+                    writeFile(str, fo);
+                 }
             }
         }
         finally
         {
             str.close();
         }
+
+        File moduleDir = FileUtil.toFile(moduleDirFo);
+        File suiteDir = FileUtil.toFile(suiteDirFo);
+
+        // create the base package in the module.
+        String basePackage = wiz.getProperty("pluginBasePackage").toString().replace(".", "" + File.separatorChar);
+        File basePackageDir = new File(moduleDir.getAbsolutePath() + File.separatorChar + "src" + File.separatorChar + basePackage);
+        basePackageDir.mkdirs();
+
+        String pluginName = (String)wiz.getProperty("pluginName");
+
+        // create a Bundle.properties file in the base package.
+        File bundlePropertiesFile = new File(basePackageDir.getAbsolutePath() + File.separatorChar + "Bundle.properties");
+        bundlePropertiesFile.createNewFile();
+        WizardUtils.createBundlePropertiesFile(FileUtil.toFileObject(bundlePropertiesFile), pluginName);
+
+        // create a manifest.mf file
+        // File manifestFile = new File(basePackageDir.getAbsolutePath() + File.separatorChar + "manifest.mf");
+        File manifestFile = new File(suiteDir.getAbsolutePath() + File.separatorChar + pluginName + File.separatorChar + "manifest.mf");
+        manifestFile.createNewFile();
+        WizardUtils.createModuleManifestFile(FileUtil.toFileObject(manifestFile), wiz.getProperty("pluginBasePackage").toString());
+
+        // modify the project.xml file to reflect the new base package
+        File projectXmlFile = new File(moduleDir.getAbsolutePath() + File.separatorChar + "nbproject/project.xml");
+        WizardUtils.setModuleBasePackageInProjectXmlFile(FileUtil.toFileObject(projectXmlFile), wiz.getProperty("pluginBasePackage").toString());
+
+        // give them a copy of the jme license to use, and modify project.properties to point to it.
+        WizardUtils.copyJmeLicenseToModule(basePackageDir);
+        WizardUtils.setLicenseInProjectProperties(moduleDir.getAbsolutePath() + File.separatorChar + "nbproject/project.properties",  basePackage + File.separatorChar + "jme-license.txt");
     }
 
     @Override
@@ -138,8 +152,6 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
     {
         String pluginName = (String)wiz.getProperty("pluginName");
 
-        // File baseDir = FileUtil.normalizeFile((File) wiz.getProperty("projdir"));
-        // File suiteDir = new File(baseDir.getAbsolutePath() + File.separatorChar + "jme-plugins");
         File suiteDir = FileUtil.normalizeFile((File) wiz.getProperty("projdir"));
         File moduleDir = new File(suiteDir.getAbsolutePath() + File.separatorChar + pluginName);
 
@@ -152,15 +164,10 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
 
         moduleDir.mkdirs();
 
-        // add module to module suite.
-        createModule(FileUtil.toFileObject(moduleDir));
+        // create the new module.
+        createModule(FileUtil.toFileObject(suiteDir), FileUtil.toFileObject(moduleDir));
 
-        // create the base package in the module.
-        String basePackage = wiz.getProperty("pluginBasePackage").toString().replace(".", "" + File.separatorChar);
-        File basePackageDir = new File(moduleDir.getAbsolutePath() + File.separatorChar + "src" + File.separatorChar + basePackage);
-        basePackageDir.mkdirs();
-
-        // add the new module to the suite
+        // inform the module suite of the new module.
         String suiteProjectPropertiesFile = new StringBuilder()
                 .append(suiteDir.getAbsolutePath())
                 .append(File.separatorChar)
@@ -171,6 +178,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
 
         WizardUtils.addModuleToSuiteProperties(suiteProjectPropertiesFile, wiz.getProperty("pluginBasePackage").toString(), pluginName);
 
+        // finally, open the project.
         Set<FileObject> resultSet = new LinkedHashSet<FileObject>();
 
         // Always open top dir as a project:

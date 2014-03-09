@@ -157,15 +157,26 @@ public class WizardUtils
         EditableProperties ep = loadProperties(propFileObject);
         String prop = ep.getProperty("modules");
 
-        String additional = new StringBuilder()
+        if (prop.trim().isEmpty())
+        {
+            prop = "${project." + pluginBasePackage + "}";
+        }
+        else
+        {
+            prop += ":${project." + pluginBasePackage + "}";
+        }
+
+        prop = prop.replaceAll("('|\")", "\\\\$1");
+
+        /* String additional = new StringBuilder()
                 .append('\\')
                 .append(String.format("%n"))
                 .append("${project.")
                 .append(pluginBasePackage)
                 .append("}")
-                .toString();
+                .toString(); */
 
-        ep.setProperty("modules", prop + additional);
+        ep.setProperty("modules", prop);
         ep.setProperty("project." + pluginBasePackage, pluginName);
 
         storeProperties(propFileObject, ep);

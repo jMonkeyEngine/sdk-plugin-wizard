@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: me.jayfella.pluginwizard
+OpenIDE-Module-Localizing-Bundle: me/jayfella/pluginwizard/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.0
+

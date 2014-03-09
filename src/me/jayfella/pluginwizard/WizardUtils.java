@@ -166,16 +166,6 @@ public class WizardUtils
             prop += ":${project." + pluginBasePackage + "}";
         }
 
-        prop = prop.replaceAll("('|\")", "\\\\$1");
-
-        /* String additional = new StringBuilder()
-                .append('\\')
-                .append(String.format("%n"))
-                .append("${project.")
-                .append(pluginBasePackage)
-                .append("}")
-                .toString(); */
-
         ep.setProperty("modules", prop);
         ep.setProperty("project." + pluginBasePackage, pluginName);
 

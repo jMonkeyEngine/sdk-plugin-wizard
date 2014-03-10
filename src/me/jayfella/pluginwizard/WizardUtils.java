@@ -26,7 +26,7 @@ import org.xml.sax.InputSource;
  */
 public class WizardUtils
 {
-    public static void setModuleBasePackageInProjectXmlFile(FileObject xmlFile, String basePackage)
+    public void setModuleBasePackageInProjectXmlFile(FileObject xmlFile, String basePackage)
     {
         try
         {
@@ -70,7 +70,7 @@ public class WizardUtils
         }
     }
 
-    public static void setLicenseInProjectProperties(String projPropPath, String licenseLoc) throws IOException
+    public void setLicenseInProjectProperties(String projPropPath, String licenseLoc) throws IOException
     {
         File projPropFile = new File(projPropPath);
         FileObject fo = FileUtil.toFileObject(projPropFile);
@@ -82,13 +82,12 @@ public class WizardUtils
         storeProperties(fo, ep);
     }
 
-    public static void copyJmeLicenseToModule(File basePackageDir) throws IOException
+    public void copyJmeLicenseToModule(File basePackageDir) throws IOException
     {
         InputStream licenseFileIs = WizardUtils.class.getClassLoader().getResourceAsStream("me/jayfella/pluginwizard/modulefiles/jme-license.txt");
-
         BufferedReader br = null;
-        StringBuilder sb = new StringBuilder();
 
+        StringBuilder sb = new StringBuilder();
         String line;
 
         try
@@ -130,27 +129,33 @@ public class WizardUtils
         bw.close();
     }
 
-    public static void createBundlePropertiesFile(FileObject fo, String pluginName) throws IOException
+    public void createBundlePropertiesFile(FileObject fo, String pluginName) throws IOException
     {
         EditableProperties ep = loadProperties(fo);
         ep.setProperty("OpenIDE-Module-Name", pluginName);
         storeProperties(fo, ep);
     }
 
-    public static void createModuleManifestFile(FileObject fo, String basePackage) throws IOException
+    public void createModuleManifestFile(File manifestFile, String basePackage) throws IOException
     {
-        EditableProperties ep = loadProperties(fo);
         String basePackagePath = basePackage.replace(".", "/");
 
-        ep.setProperty("Manifest-Version", "1.0");
-        ep.setProperty("OpenIDE-Module", basePackage);
-        ep.setProperty("OpenIDE-Module-Implementation-Version", "0");
-        // ep.setProperty("OpenIDE-Module-Layer", basePackagePath + "/layer.xml");
-        ep.setProperty("OpenIDE-Module-Localizing-Bundle", basePackagePath + "/Bundle.properties");
-        storeProperties(fo, ep);
+        String content = new StringBuilder()
+                .append("Manifest-Version: 1.0").append("\n")
+                .append("OpenIDE-Module: ").append(basePackage).append("\n")
+                .append("OpenIDE-Module-Implementation-Version: 0").append("\n")
+                // .append("OpenIDE-Module-Layer: ").append(basePackagePath).append("/layer.xml").append("\n")
+                .append("OpenIDE-Module-Localizing-Bundle: ").append(basePackagePath).append("/Bundle.properties").append("\n")
+                .toString();
+
+        FileWriter fw = new FileWriter(manifestFile.getAbsoluteFile());
+        BufferedWriter bw = new BufferedWriter(fw);
+        bw.write(content);
+
+        bw.close();
     }
 
-    public static void addModuleToSuiteProperties(String propertiesFilePath, String pluginBasePackage, String pluginName) throws IOException
+    public void addModuleToSuiteProperties(String propertiesFilePath, String pluginBasePackage, String pluginName) throws IOException
     {
         FileObject propFileObject = FileUtil.toFileObject(new File(propertiesFilePath));
 
@@ -172,7 +177,7 @@ public class WizardUtils
         storeProperties(propFileObject, ep);
     }
 
-    private static EditableProperties loadProperties(FileObject propsFO) throws IOException
+    private EditableProperties loadProperties(FileObject propsFO) throws IOException
     {
         InputStream propsIS = propsFO.getInputStream();
         EditableProperties props = new EditableProperties(true);
@@ -187,7 +192,7 @@ public class WizardUtils
         return props;
     }
 
-    public static void storeProperties(FileObject propsFO, EditableProperties props) throws IOException
+    private void storeProperties(FileObject propsFO, EditableProperties props) throws IOException
     {
         FileLock lock = propsFO.lock();
 

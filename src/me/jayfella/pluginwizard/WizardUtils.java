@@ -26,6 +26,20 @@ import org.xml.sax.InputSource;
  */
 public class WizardUtils
 {
+    public boolean basePackageAlreadyExistsInModuleSuite(FileObject fo, String basePackage)
+    {
+        try
+        {
+            EditableProperties ep = loadProperties(fo);
+            return (!(ep.getProperty("project." + basePackage) == null));
+        }
+        catch (IOException ex)
+        {
+            Exceptions.printStackTrace(ex);
+            return false;
+        }
+    }
+
     public void setModuleBasePackageInProjectXmlFile(FileObject xmlFile, String basePackage)
     {
         try
@@ -133,6 +147,9 @@ public class WizardUtils
     {
         EditableProperties ep = loadProperties(fo);
         ep.setProperty("OpenIDE-Module-Name", pluginName);
+        ep.setProperty("OpenIDE-Module-Short-Description", "A short description...");
+        ep.setProperty("OpenIDE-Module-Long-Description", "A long description...");
+        ep.setProperty("OpenIDE-Module-Display-Category", "jMonkeyEngine");
         storeProperties(fo, ep);
     }
 

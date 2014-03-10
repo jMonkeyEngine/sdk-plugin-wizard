@@ -8,7 +8,6 @@ import java.awt.Color;
 import java.io.File;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
@@ -20,8 +19,6 @@ import org.openide.filesystems.FileUtil;
 public class PluginWizardPanelVisual extends JPanel implements DocumentListener {
 
     public static final String PROP_PROJECT_NAME = "projectName";
-    public static final String BUTTON_BROWSE = "BROWSE";
-    public static final String TITLE_BROWSE = "Select Project Location";
     private PluginWizardWizardPanel panel;
 
     public PluginWizardPanelVisual(PluginWizardWizardPanel panel) {
@@ -159,19 +156,23 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener 
 
     private void browseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_browseButtonActionPerformed
         String command = evt.getActionCommand();
-        if (BUTTON_BROWSE.equals(command)) {
+        if ("BROWSE".equals(command))
+        {
             JFileChooser chooser = new JFileChooser();
             FileUtil.preventFileChooserSymlinkTraversal(chooser, null);
-            chooser.setDialogTitle(TITLE_BROWSE);
+            chooser.setDialogTitle("Select Project Location");
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            String path = suiteLocationTextField.getText();
-            if (path.length() > 0) {
+            String path = this.suiteLocationTextField.getText();
+            if (path.length() > 0)
+            {
                 File f = new File(path);
-                if (f.exists()) {
+                if (f.exists())
+                {
                     chooser.setSelectedFile(f);
                 }
             }
-            if (JFileChooser.APPROVE_OPTION == chooser.showOpenDialog(this)) {
+            if (JFileChooser.APPROVE_OPTION == chooser.showOpenDialog(this))
+            {
                 File projectDir = chooser.getSelectedFile();
                 suiteLocationTextField.setText(FileUtil.normalizeFile(projectDir).getAbsolutePath());
             }
@@ -196,121 +197,89 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener 
     // End of variables declaration//GEN-END:variables
 
     @Override
-    public void addNotify() {
+    public void addNotify()
+    {
         super.addNotify();
 
         //same problem as in 31086, initial focus on Cancel button
         pluginNameTextField.requestFocus();
     }
 
-    // should have greatly improved readability now.
-    boolean valid(WizardDescriptor wizardDescriptor) {
-        clearFieldError(wizardDescriptor);
-        return !hasEmptyFields(wizardDescriptor) && !hasInvalidPaths(wizardDescriptor);
-    }
+    boolean valid(WizardDescriptor wizardDescriptor)
+    {
 
-    private void clearFieldError(WizardDescriptor wizardDescriptor) {
-        wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "");
-    }
-
-    private boolean hasEmptyFields(WizardDescriptor wizardDescriptor) {
-        boolean emptyFieldFound = false;
-        if (isEmptyField(pluginNameTextField)) {
-            fieldError(wizardDescriptor, "You must specify a Plugin Name.");
-            emptyFieldFound = true;
-        } else if (isEmptyField(pluginBasePackageTextField)) {
-            fieldError(wizardDescriptor, "You must specify a base package.");
-            emptyFieldFound = true;
+        if (pluginNameTextField.getText().trim().length() == 0)
+        {
+            wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "You must specify a Plugin Name.");
+            return false;
         }
-        return emptyFieldFound;
-    }
 
-    private boolean hasInvalidPaths(WizardDescriptor wizardDescriptor) {
-        boolean invalidPathFound = testSuiteLocation(wizardDescriptor);
-        if (!invalidPathFound) {
-            invalidPathFound = testModuleLocation(wizardDescriptor);
+        File f = FileUtil.normalizeFile(new File(suiteLocationTextField.getText()).getAbsoluteFile());
+        if (!f.isDirectory())
+        {
+            wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "Suite Location Folder is not a valid path.");
+            return false;
         }
-        return invalidPathFound;
-    }
 
-    private boolean isEmptyField(JTextField field) {
-        if (field.getText().trim().length() == 0) {
-            return true;
+        if (pluginBasePackageTextField.getText().trim().length() == 0)
+        {
+            wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "You must specify a base package.");
+            return false;
         }
-        return false;
-    }
 
-    private boolean testSuiteLocation(WizardDescriptor wizardDescriptor) {
-        boolean invalidPathFound = false;
-        File projLoc = getFileFromField(suiteLocationTextField);
-        if (!projLoc.isDirectory()) {
-            fieldError(wizardDescriptor, "Suite Location Folder is not a valid path.");
-            invalidPathFound = true;
-        } else {
-            projLoc = findFirstExistingParent(projLoc);
-            if (isWritable(projLoc)) {
-                fieldError(wizardDescriptor, "Plugin Suite Folder cannot be created.");
-                invalidPathFound = true;
-            } else if (FileUtil.toFileObject(projLoc) == null) {
-                fieldError(wizardDescriptor, "Plugin Suite Folder is not a valid path.");
-                invalidPathFound = true;
-            } else {
-                /* File[] kids = destFolder.listFiles();
-                 if (destFolder.exists() && kids != null && kids.length > 0)
-                 {
-                 // Folder exists and is not empty
-                 wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "Project Folder already exists and is not empty.");
-                 return false;
-                 }*/
-            }
-        }
-        return invalidPathFound;
-    }
+        final File destFolder = FileUtil.normalizeFile(new File(suiteFolderTextField.getText()).getAbsoluteFile());
 
-    private boolean testModuleLocation(WizardDescriptor wizardDescriptor) {
-        boolean invalidPathFound = false;
-        String modulePath = createModulePath();
-        if (new File(modulePath).exists()) {
-            fieldError(wizardDescriptor, "This suite already contains a plugin with this name.");
-            invalidPathFound = true;
-        }
-        return invalidPathFound;
-    }
-
-    private File getFileFromField(JTextField fileField) {
-        return FileUtil.normalizeFile(new File(fileField.getText()).getAbsoluteFile());
-    }
-
-    private File findFirstExistingParent(File projLoc) {
-        while (projLoc != null && !projLoc.exists()) {
+        File projLoc = destFolder;
+        while (projLoc != null && !projLoc.exists())
+        {
             projLoc = projLoc.getParentFile();
         }
-        return projLoc;
-    }
+        if (projLoc == null || !projLoc.canWrite())
+        {
+            wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "Plugin Suite Folder cannot be created.");
+            return false;
+        }
 
-    private boolean isWritable(File projLoc) {
-        return projLoc == null || !projLoc.canWrite();
-    }
+        if (FileUtil.toFileObject(projLoc) == null)
+        {
+            wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "Plugin Suite Folder is not a valid path.");
+            return false;
+        }
 
-    private String createModulePath() {
-        String modulePath = new StringBuilder()
+        String suitePath = new StringBuilder()
                 .append(suiteLocationTextField.getText().trim())
                 .append(File.separatorChar)
                 .append("jme-plugins")
+                .toString();
+
+        String modulePath = new StringBuilder()
+                .append(suitePath)
                 .append(File.separatorChar)
                 .append(pluginNameTextField.getText().trim())
                 .toString();
-        return modulePath;
+
+        if (new File(modulePath).exists())
+        {
+            wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "This suite already contains a plugin with this name.");
+            return false;
+        }
+
+        File suiteProjPropertiesFile = new File(suitePath + File.separatorChar + "nbproject" + File.separatorChar + "project.properties");
+        if (suiteProjPropertiesFile.exists())
+        {
+            if (new WizardUtils().basePackageAlreadyExistsInModuleSuite(FileUtil.toFileObject(suiteProjPropertiesFile), this.pluginBasePackageTextField.getText().trim()))
+            {
+                wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "Base Package has already been defined in another plugin.");
+                return false;
+            }
+        }
+
+        wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "");
+        return true;
     }
-    
-    private void fieldError(WizardDescriptor wizardDescriptor, String message) {
-        wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, message);
-    }
-    
-    
-    // Still needs cleaning up.
-    
-    void store(WizardDescriptor d) {
+
+    void store(WizardDescriptor d)
+    {
         String folder = suiteFolderTextField.getText().trim();
         String pluginName = pluginNameTextField.getText().trim().toLowerCase();
         String basePackage = pluginBasePackageTextField.getText().trim().toLowerCase();
@@ -320,61 +289,75 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener 
         d.putProperty("pluginBasePackage", basePackage);
     }
 
-    void read(WizardDescriptor settings) {
+    void read(WizardDescriptor settings)
+    {
         File projectLocation = (File) settings.getProperty("projdir");
-        if (projectLocation == null || projectLocation.getParentFile() == null || !projectLocation.getParentFile().isDirectory()) {
+        if (projectLocation == null || projectLocation.getParentFile() == null || !projectLocation.getParentFile().isDirectory())
+        {
             projectLocation = ProjectChooser.getProjectsFolder();
-        } else {
+        } else
+        {
             projectLocation = projectLocation.getParentFile();
         }
         this.suiteLocationTextField.setText(projectLocation.getAbsolutePath());
 
         String pluginName = (String) settings.getProperty("pluginName");
-        if (pluginName == null) {
+        if (pluginName == null)
+        {
             pluginName = "my-library";
         }
         this.pluginNameTextField.setText(pluginName);
         this.pluginNameTextField.selectAll();
 
         String pluginBasePackage = (String) settings.getProperty("pluginBasePackage");
-        if (pluginBasePackage == null) {
+        if (pluginBasePackage == null)
+        {
             pluginBasePackage = "com.mycompany.plugins.mylibrary";
         }
         this.pluginBasePackageTextField.setText(pluginBasePackage);
     }
 
-    void validate(WizardDescriptor d) throws WizardValidationException {
+    void validate(WizardDescriptor d) throws WizardValidationException
+    {
         // nothing to validate
     }
 
     @Override
-    public void changedUpdate(DocumentEvent e) {
+    public void changedUpdate(DocumentEvent e)
+    {
         updateTexts(e);
-        if (this.pluginNameTextField.getDocument() == e.getDocument()) {
+        if (this.pluginNameTextField.getDocument() == e.getDocument())
+        {
             firePropertyChange(PROP_PROJECT_NAME, null, this.pluginNameTextField.getText());
         }
     }
 
     @Override
-    public void insertUpdate(DocumentEvent e) {
+    public void insertUpdate(DocumentEvent e)
+    {
         updateTexts(e);
-        if (this.pluginNameTextField.getDocument() == e.getDocument()) {
+        if (this.pluginNameTextField.getDocument() == e.getDocument())
+        {
             firePropertyChange(PROP_PROJECT_NAME, null, this.pluginNameTextField.getText());
         }
     }
 
     @Override
-    public void removeUpdate(DocumentEvent e) {
+    public void removeUpdate(DocumentEvent e)
+    {
         updateTexts(e);
-        if (this.pluginNameTextField.getDocument() == e.getDocument()) {
+        if (this.pluginNameTextField.getDocument() == e.getDocument())
+        {
             firePropertyChange(PROP_PROJECT_NAME, null, this.pluginNameTextField.getText());
         }
     }
 
-    private void updateTexts(DocumentEvent e) {
+    private void updateTexts(DocumentEvent e)
+    {
         Document doc = e.getDocument();
 
-        if (doc == pluginNameTextField.getDocument() || doc == suiteLocationTextField.getDocument()) {
+        if (doc == pluginNameTextField.getDocument() || doc == suiteLocationTextField.getDocument())
+        {
             String pluginName = pluginNameTextField.getText().trim();
             String projectFolder = suiteLocationTextField.getText().trim();
 
@@ -392,16 +375,19 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener 
                     .toString();
             pluginFolderTextField.setText(modulePath);
 
-            if (!new File(suitePath).exists()) {
+            if (!new File(suitePath).exists())
+            {
                 suiteFolderTextField.setBackground(new Color(1f, .98f, 0.6f));
                 suiteFolderTextField.setToolTipText("A 'jme-plugins' suite does not exist in this directory. One will be created.");
-            } else {
+            }
+            else
+            {
                 suiteFolderTextField.setBackground(new Color(.525f, .976f, .607f));
                 suiteFolderTextField.setToolTipText("A 'jme-plugins' suite has been found in this directory.");
             }
 
         }
 
-        panel.fireChangeEvent(); // Notify that the panel changed
+        panel.fireChangeEvent();
     }
 }

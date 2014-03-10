@@ -34,6 +34,8 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
     private WizardDescriptor.Panel[] panels;
     private WizardDescriptor wiz;
 
+    private WizardUtils wizardUtils = new WizardUtils();
+
     public PluginWizardWizardIterator()
     {
     }
@@ -59,15 +61,9 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         };
     }
 
-    private void createModuleSuite(FileObject suiteDir) throws IOException
+    private void unzipFile(String zipFile, FileObject dirFo) throws IOException
     {
-        // File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleSuiteTemplate.zip"));
-        // FileObject suiteTemplate = FileUtil.toFileObject(file);
-
-
-        // ZipInputStream str = new ZipInputStream(suiteTemplate.getInputStream());
-        ZipInputStream str = new ZipInputStream(getClass().getClassLoader().getResourceAsStream("me/jayfella/pluginwizard/ModuleSuiteTemplate.zip"));
-
+        ZipInputStream str = new ZipInputStream(getClass().getClassLoader().getResourceAsStream(zipFile));
         ZipEntry entry;
 
         try
@@ -76,13 +72,13 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
             {
                 if (entry.isDirectory())
                 {
-                    FileUtil.createFolder(suiteDir, entry.getName());
+                    FileUtil.createFolder(dirFo, entry.getName());
                 }
                 else
                 {
-                    FileObject fo = FileUtil.createData(suiteDir, entry.getName());
+                    FileObject fo = FileUtil.createData(dirFo, entry.getName());
                     writeFile(str, fo);
-                }
+                 }
             }
         }
         finally
@@ -93,34 +89,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
 
     private void createModule(FileObject suiteDirFo, FileObject moduleDirFo) throws IOException
     {
-        // File file = FileUtil.normalizeFile(new File("src/me/jayfella/pluginwizard/ModuleTemplate.zip"));
-        // FileObject moduleTemplate = FileUtil.toFileObject(file);
-
-        // ZipInputStream str = new ZipInputStream(moduleTemplate.getInputStream());
-        ZipInputStream str = new ZipInputStream(getClass().getClassLoader().getResourceAsStream("me/jayfella/pluginwizard/ModuleTemplate.zip"));
-
-        ZipEntry entry;
-
-        // extract the zip file
-        try
-        {
-            while ((entry = str.getNextEntry()) != null)
-            {
-                if (entry.isDirectory())
-                {
-                    FileUtil.createFolder(moduleDirFo, entry.getName());
-                }
-                else
-                {
-                    FileObject fo = FileUtil.createData(moduleDirFo, entry.getName());
-                    writeFile(str, fo);
-                 }
-            }
-        }
-        finally
-        {
-            str.close();
-        }
+        unzipFile("me/jayfella/pluginwizard/ModuleTemplate.zip", moduleDirFo);
 
         File moduleDir = FileUtil.toFile(moduleDirFo);
         File suiteDir = FileUtil.toFile(suiteDirFo);
@@ -135,21 +104,20 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         // create a Bundle.properties file in the base package.
         File bundlePropertiesFile = new File(basePackageDir.getAbsolutePath() + File.separatorChar + "Bundle.properties");
         bundlePropertiesFile.createNewFile();
-        WizardUtils.createBundlePropertiesFile(FileUtil.toFileObject(bundlePropertiesFile), pluginName);
+        wizardUtils.createBundlePropertiesFile(FileUtil.toFileObject(bundlePropertiesFile), pluginName);
 
         // create a manifest.mf file
-        // File manifestFile = new File(basePackageDir.getAbsolutePath() + File.separatorChar + "manifest.mf");
         File manifestFile = new File(suiteDir.getAbsolutePath() + File.separatorChar + pluginName + File.separatorChar + "manifest.mf");
         manifestFile.createNewFile();
-        WizardUtils.createModuleManifestFile(FileUtil.toFileObject(manifestFile), wiz.getProperty("pluginBasePackage").toString());
+        wizardUtils.createModuleManifestFile(manifestFile, wiz.getProperty("pluginBasePackage").toString());
 
         // modify the project.xml file to reflect the new base package
         File projectXmlFile = new File(moduleDir.getAbsolutePath() + File.separatorChar + "nbproject/project.xml");
-        WizardUtils.setModuleBasePackageInProjectXmlFile(FileUtil.toFileObject(projectXmlFile), wiz.getProperty("pluginBasePackage").toString());
+        wizardUtils.setModuleBasePackageInProjectXmlFile(FileUtil.toFileObject(projectXmlFile), wiz.getProperty("pluginBasePackage").toString());
 
         // give them a copy of the jme license to use, and modify project.properties to point to it.
-        WizardUtils.copyJmeLicenseToModule(basePackageDir);
-        WizardUtils.setLicenseInProjectProperties(moduleDir.getAbsolutePath() + File.separatorChar + "nbproject/project.properties",  basePackage + File.separatorChar + "jme-license.txt");
+        wizardUtils.copyJmeLicenseToModule(basePackageDir);
+        wizardUtils.setLicenseInProjectProperties(moduleDir.getAbsolutePath() + File.separatorChar + "nbproject/project.properties",  basePackage + File.separatorChar + "jme-license.txt");
     }
 
     @Override
@@ -164,7 +132,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         if (!suiteDir.exists())
         {
             suiteDir.mkdirs();
-            createModuleSuite(FileUtil.toFileObject(suiteDir));
+            unzipFile("me/jayfella/pluginwizard/ModuleSuiteTemplate.zip", FileUtil.toFileObject(suiteDir));
         }
 
         moduleDir.mkdirs();
@@ -181,7 +149,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
                 .append("project.properties")
                 .toString();
 
-        WizardUtils.addModuleToSuiteProperties(suiteProjectPropertiesFile, wiz.getProperty("pluginBasePackage").toString(), pluginName);
+        wizardUtils.addModuleToSuiteProperties(suiteProjectPropertiesFile, wiz.getProperty("pluginBasePackage").toString(), pluginName);
 
         // finally, open the project.
         Set<FileObject> resultSet = new LinkedHashSet<FileObject>();
@@ -295,7 +263,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
     @Override public final void addChangeListener(ChangeListener l) { }
     @Override public final void removeChangeListener(ChangeListener l) { }
 
-    private static void writeFile(ZipInputStream str, FileObject fo) throws IOException
+    private void writeFile(ZipInputStream str, FileObject fo) throws IOException
     {
         OutputStream out = fo.getOutputStream();
 

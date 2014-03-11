@@ -33,6 +33,7 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener,
         pluginNameTextField.getDocument().addDocumentListener(this);
         suiteLocationTextField.getDocument().addDocumentListener(this);
         pluginBasePackageTextField.getDocument().addDocumentListener(this);
+        wrappedProjectLocationTextField.getDocument().addDocumentListener(this);
 
         wrapProjectCheckBox.addActionListener(this);
     }
@@ -352,6 +353,18 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener,
             }
         }
 
+        if (wrapProjectCheckBox.isSelected())
+        {
+            File wrappedJarFile = new File(wrappedProjectLocationTextField.getText().trim());
+            if (!wrappedJarFile.exists())
+            {
+                wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "Wrapped jar does not exist.");
+                return false;
+            }
+        }
+
+
+
         wizardDescriptor.putProperty(WizardDescriptor.PROP_ERROR_MESSAGE, "");
         return true;
     }
@@ -445,6 +458,18 @@ public class PluginWizardPanelVisual extends JPanel implements DocumentListener,
         {
             this.wrappedProjectLocationTextField.setEnabled(this.wrapProjectCheckBox.isSelected());
             this.browseWrappedProjectButton.setEnabled(this.wrapProjectCheckBox.isSelected());
+
+            if (this.wrapProjectCheckBox.isSelected())
+            {
+                wrappedProjectLocationTextField.setText("jar location...");
+            }
+            else
+            {
+                wrappedProjectLocationTextField.setText("");
+            }
+
+            firePropertyChange(PROP_PROJECT_NAME, !this.wrapProjectCheckBox.isSelected(), this.wrapProjectCheckBox.isSelected());
+
         }
     }
 

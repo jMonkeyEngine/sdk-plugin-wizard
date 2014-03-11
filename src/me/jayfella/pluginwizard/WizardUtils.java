@@ -26,6 +26,45 @@ import org.xml.sax.InputSource;
  */
 public class WizardUtils
 {
+    public void addWrappedJarToModuleProjectXmlFile(FileObject xmlFile, String jarName)
+    {
+        try
+        {
+            Document doc = XMLUtil.parse(new InputSource(new ByteArrayInputStream(xmlFile.asBytes())), false, false, null, null);
+
+            Element runtimeRelativePathElement = doc.createElement("runtime-relative-path");
+            runtimeRelativePathElement.appendChild(doc.createTextNode("ext/" + jarName));
+
+            Element binaryOriginElement = doc.createElement("binary-origin");
+            binaryOriginElement.appendChild(doc.createTextNode("release/modules/ext/" + jarName));
+
+            Element classPathExtensionElement = doc.createElement("class-path-extension");
+            classPathExtensionElement.appendChild(runtimeRelativePathElement);
+            classPathExtensionElement.appendChild(binaryOriginElement);
+
+            NodeList nl = doc.getDocumentElement().getElementsByTagName("data");
+
+            Element dataElement = (Element)nl.item(0);
+            dataElement.appendChild(classPathExtensionElement);
+
+
+            OutputStream out = xmlFile.getOutputStream();
+
+            try
+            {
+                XMLUtil.write(doc, out, "UTF-8");
+            }
+            finally
+            {
+                out.close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Exceptions.printStackTrace(ex);
+        }
+    }
+
     public boolean basePackageAlreadyExistsInModuleSuite(FileObject fo, String basePackage)
     {
         try

@@ -8,6 +8,9 @@ import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
@@ -118,6 +121,21 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         // give them a copy of the jme license to use, and modify project.properties to point to it.
         wizardUtils.copyJmeLicenseToModule(basePackageDir);
         wizardUtils.setLicenseInProjectProperties(moduleDir.getAbsolutePath() + File.separatorChar + "nbproject/project.properties",  basePackage + File.separatorChar + "jme-license.txt");
+
+        String wrappedJarLocation = wiz.getProperty("wrappedJar").toString();
+        if (!wrappedJarLocation.isEmpty())
+        {
+            // copy the jar to the appropriate folder
+            File wrappedJar = new File(wrappedJarLocation);
+            File wrappedJarDestinationDir = new File(moduleDir.getAbsolutePath() + File.separatorChar + "release" + File.separatorChar + "modules" + File.separatorChar + "ext");
+            Path wrappedJarDestination = Paths.get(wrappedJarDestinationDir.getAbsolutePath() + File.separatorChar + wrappedJar.getName());
+
+            wrappedJarDestinationDir.mkdirs();
+            Files.copy(wrappedJar.toPath(), wrappedJarDestination);
+
+            // modify the project.xml file to reflect the new wrapped jar.
+            wizardUtils.addWrappedJarToModuleProjectXmlFile(FileUtil.toFileObject(projectXmlFile), wrappedJar.getName());
+        }
     }
 
     @Override
@@ -212,6 +230,7 @@ public class PluginWizardWizardIterator implements WizardDescriptor./*Progress*/
         this.wiz.putProperty("projdir", null);
         this.wiz.putProperty("name", null);
         this.wiz.putProperty("pluginBasePackage", null);
+        this.wiz.putProperty("wrappedJar", null);
 
         this.wiz = null;
         panels = null;

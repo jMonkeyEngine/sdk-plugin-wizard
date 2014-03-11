@@ -16,4 +16,3 @@ The WizardUtils.java class provides helper methods to edit files such as 'build.
 TODO:
 - Provide a better method for module-suite existence. Currently only checking if directory exists.
 - Provide a better method for plugin existence. Currently only checking if directory exists.
-- New module integration is not complete - some files still require editing. @jayfella is in the process of doing this.

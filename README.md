@@ -1,7 +1,7 @@
-plugins.jmonkeyengine.org
-=========================
+Plugins Wizard for jMonkeyEngine 3 SDK
+======================================
 
-jMonkeyEngine Plugins Repository
+[Development Thread](http://hub.jmonkeyengine.org/forum/topic/plugin-wizard/)
 
 An implementation of a plugin wizard - reducing the steps required to create a jmonkey plugin by means of automation.
 

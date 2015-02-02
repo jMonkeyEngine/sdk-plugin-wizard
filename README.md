@@ -1,7 +1,7 @@
 Plugins Wizard for jMonkeyEngine 3 SDK
 ======================================
 
-[Development Thread](http://hub.jmonkeyengine.org/forum/topic/plugin-wizard/)
+[Development Thread](http://hub.jmonkeyengine.org/t/plugin-wizard-improved-plugin-publishing-procedure/28888)
 
 An implementation of a plugin wizard - reducing the steps required to create a jmonkey plugin by means of automation.
 
